@@ -1,0 +1,28 @@
+:host {
+  --bg: #ffffff;
+  --text-color: #343434;
+  --hilite: #dddddd;
+}
+
+:host[dark] { // <-- doesnt seem to wanna play ball
+  font-family: 'Courier New', Courier, monospace;
+}
+
+div.root[dark] {
+  --bg: #343434;
+  --text-color: #ffffff;
+  --hilite: #999999;
+}
+
+div {
+  background-color: var(--bg);
+
+  p {
+    color: var(--text-color);
+
+    &:first-child {
+      color: var(--hilite);
+      border: 1px solid var(--text-color);
+    }
+  }
+}

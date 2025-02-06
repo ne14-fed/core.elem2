@@ -1,0 +1,28 @@
+{
+  "name": "@ne1410s/new-demo",
+  "version": "1.0.0",
+  "description": "New demo!!",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "exports": {
+    "import": "./dist/index.js",
+    "types": "./dist/main.d.ts"
+  },
+  "types": "./dist/main.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run clean && node esbuild.js",
+    "clean": "del-cli dist"
+  },
+  "devDependencies": {
+    "clean-css": "^5.3.3",
+    "del-cli": "^6.0.0",
+    "esbuild": "^0.24.2",
+    "esbuild-sass-plugin": "^3.3.1",
+    "html-minifier-terser": "^7.2.0",
+    "typescript": "^5.0.0"
+  }
+}
