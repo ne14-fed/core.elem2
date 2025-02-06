@@ -1,6 +1,6 @@
 {
-  "scripts": {
-    "dev": "vite"
+  "dependencies": {
+    "@ne1410s/new-demo": "*"
   },
   "devDependencies": {
     "vite": "^6.1.0"
