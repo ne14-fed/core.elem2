@@ -1,12 +1,14 @@
-import { build as es_build } from 'esbuild';
+import esbuild from 'esbuild';
 import { sassPlugin } from 'esbuild-sass-plugin';
 import { readFile as fs_readFile } from 'fs/promises';
 import { compileStringAsync } from 'sass';
 import CleanCSS from 'clean-css';
 import { minify as hmt_minify } from 'html-minifier-terser';
-import { execSync } from 'child_process';
 
-await es_build({
+const args = process.argv.slice(2);
+const isWatchMode = args.includes("--watch");
+
+const options = {
   entryPoints: ['src/main.ts'],
   loader: { '.html': 'text', '.css': 'text' },
   plugins: [
@@ -37,6 +39,12 @@ await es_build({
   format: 'esm',
   bundle: true,
   minify: true,
-});
+};
 
-execSync('tsc --emitDeclarationOnly');
+if (isWatchMode) {
+  const ctx = await esbuild.context(options);
+  await ctx.watch();
+} else {
+  await esbuild.build(options);
+}
+
