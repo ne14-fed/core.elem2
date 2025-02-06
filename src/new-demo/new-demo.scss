@@ -1,28 +1,98 @@
-:host {
-  --bg: #ffffff;
-  --text-color: #343434;
-  --hilite: #dddddd;
+ul,
+li {
+  padding: 0;
+  margin: 0;
+  font: inherit;
+}
+slot,
+li.split .icon {
+  display: none;
+}
+.top:not(.open),
+ul:not(.top) {
+  visibility: hidden;
 }
 
-:host[dark] { // <-- doesnt seem to wanna play ball
-  font-family: 'Courier New', Courier, monospace;
+ul {
+  border: var(--border, 1px solid #bbb);
+  background: var(--bg, #fff);
+  box-shadow: var(--box-shadow, 2px 2px 3px #888);
+  transition: background-color 0.6s;
+  z-index: 9999999;
 }
 
-div.root[dark] {
-  --bg: #343434;
-  --text-color: #ffffff;
-  --hilite: #999999;
+.top {
+  position: fixed;
+  font-size: var(--font-size, 0.65rem);
+  user-select: none;
 }
 
-div {
-  background-color: var(--bg);
+.icon.left {
+  left: 1em;
+  transform: translate(-50%, -50%);
+}
+.icon.right {
+  right: 1em;
+  transform: translate(50%, -50%);
+}
+.icon {
+  max-width: 1em;
+  max-height: 1em;
+  position: absolute;
+  top: 50%;
+  line-height: 0;
+}
 
-  p {
-    color: var(--text-color);
+li > p:not(:empty) {
+  margin: 0 1em;
+  white-space: nowrap;
+}
+li.disabled {
+  color: var(--disabled-fg, #bbb);
+}
+li.split {
+  border-top: var(--split-border, var(--border, 1px solid #bbb));
+  padding: 0;
+  margin: 0.3em;
+}
+li.split:first-child,
+li.split:last-child,
+li.split + li.split {
+  display: none;
+}
+li.hover:not(.disabed):not(.split) {
+  background: var(--hover-item-bg, #bbb);
+}
+.top.open li.hover > ul {
+  visibility: visible;
+}
+li {
+  margin: 0.2em 0;
+  padding: 0.5em 1em;
+  display: flex;
+  justify-content: space-between;
+  text-align: left;
+  position: relative;
+  cursor: default;
+  color: var(--fg, #000);
+}
 
-    &:first-child {
-      color: var(--hilite);
-      border: 1px solid var(--text-color);
-    }
-  }
+li.group::after {
+  content: '\25b6';
+  position: absolute;
+  font-size: 0.65em;
+  right: 0;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+ul:not(.top) {
+  position: absolute;
+  left: 100%;
+  top: -0.25em;
+}
+
+ul.nestle {
+  left: 0.5em;
+  top: 100%;
 }

@@ -1,43 +1,207 @@
 import inlineCss from './new-demo.scss';
 import inlineHtml from './new-demo.html';
+import { ChainSource, q } from '@ne1410s/dom';
+
+interface MenuEventDetail {
+  ref: string;
+  title?: string;
+  origin: HTMLElement;
+}
 
 /**
  * Lol at the new kinda demo :D :D :D
  */
 export class NewDemo extends HTMLElement {
-  private _message: string = "Default Message";
 
-  static get observedAttributes() {
-    return ["message"];
-  }
+  private static readonly CHAR_REF_REGEX = /^[0-9a-f]{4,5}$/i;
+
+  private readonly root: ShadowRoot;
+  private readonly top: HTMLUListElement;
+  private _connected: boolean = false;
+
+  // static get observedAttributes() {
+  //   return ["message"];
+  // }
 
   constructor() {
     super();
-
-    this.attachShadow({ mode: "open" });
-
+    this.root = this.attachShadow({ mode: "open" });
     const sheet = new CSSStyleSheet();
     sheet.replaceSync(inlineCss);
     this.shadowRoot!.adoptedStyleSheets = [sheet];
     this.shadowRoot!.innerHTML = inlineHtml;
+    this.top = this.root.querySelector('ul')!;
   }
 
-  /**
-   * Gets or sets the message.
-   */
-  get message(): string {
-    return this._message;
-  }
+  connectedCallback() {
+    if (!this._connected) {
+      setTimeout(() => this.reload());
+      q(this.parentNode!).on('contextmenu', (event: Event) => this.onParentContext(event as MouseEvent));
+      q(this, this.parentNode!).on('contextmenu wheel', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      q(this).on('mousedown', (e) => e.stopPropagation());
+      q(window).on('mousedown resize wheel', () => this.close());
 
-  set message(value: string) {
-    this._message = value;
-    this.setAttribute("message", value);
-  }
-
-  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-    if (name === "message") {
-      console.log('woot! message changed:', oldValue, '-->', newValue);
+      this._connected = true;
     }
+  }
+
+  /** Opens the menu.  */
+  open(): void {
+    // close all menus
+    const doc = this.parentElement!.getRootNode() as Document;
+    doc.querySelectorAll<NewDemo>('new-demo').forEach(m => m.close());
+
+    // style this one as open
+    this.top.classList.add('open');
+    q(this).fire('menuopen');
+  }
+
+  /** Closes the menu. */
+  close(): void {
+    if (this.top.classList.contains('open')) {
+      this.top.classList.remove('open');
+      q(this).fire('menuclose');
+    }
+  }
+
+  /** Reloads active contents based on client dom. */
+  reload(): void {
+    q(this.top)
+      .empty()
+      .append(...this.walk(this, false));
+  }
+
+  private onParentContext(event: MouseEvent) {
+    if (this.isConnected) {
+      // update position (y)
+      const y = event.clientY;
+      const height = this.top.offsetHeight;
+      const posY = y + height + 2 > window.innerHeight ? y - height : y;
+      this.top.style.top = `${Math.max(0, posY)}px`;
+
+      // update position (x)
+      const x = event.clientX;
+      const width = this.top.offsetWidth;
+      const posX = x + width + 2 > window.innerWidth ? x - width : x;
+      this.top.style.left = `${Math.max(0, posX)}px`;
+
+      // open
+      this.open();
+    }
+  }
+
+  private walk(ul: ParentNode, parentDisabled: boolean, ref = ''): ChainSource[] {
+    let levelItemNo = 0;
+    return Array.from(ul.children)
+      .filter(
+        (c) =>
+          c instanceof HTMLLIElement &&
+          !c.classList.contains('hidden') &&
+          (c.textContent || c.classList.contains('split')),
+      )
+      .reduce((acc, elem) => {
+        const li = elem as HTMLLIElement;
+        const children = Array.from(li.children).map((el) => el as HTMLElement);
+        const a = children.find((n) => n instanceof HTMLAnchorElement) as HTMLAnchorElement;
+        const ul = children.find((n) => n instanceof HTMLUListElement) as HTMLUListElement;
+        const isSplit = li.classList.contains('split');
+        const isGrouper = !isSplit && ul && ul.querySelector('li');
+        const isDisabled = !isSplit && (parentDisabled || li.classList.contains('disabled'));
+        const aChildren = Array.from(a?.children || []).map((el) => el as HTMLElement);
+        const imgs = children
+          .concat(aChildren)
+          .filter((n) => n instanceof HTMLImageElement)
+          .map((n) => n as HTMLImageElement);
+
+        if (!isSplit) levelItemNo++;
+
+        const classes = [] as string[];
+        if (isSplit) classes.push('split');
+        else {
+          if (isDisabled) classes.push('disabled');
+          if (isGrouper) classes.push('group');
+          if (a?.target === '_blank') classes.push('click-out');
+          else if (a) classes.push('click-in');
+        }
+
+        const bestTextNode = [...children, li].find((c) => c.innerText);
+        const bestText = isSplit ? undefined : (bestTextNode?.innerText ?? `Item ${levelItemNo}`);
+        const shortcut = isSplit || isGrouper ? null : li.getAttribute('aria-keyshortcuts');
+        const liRef = `${ref}${levelItemNo}`;
+        const eventDetail: MenuEventDetail = { ref: liRef, title: bestText, origin: a || li };
+
+        const handleClick = () => {
+          if (!isDisabled && !isGrouper && !isSplit) {
+            eventDetail.origin.click();
+            q(this).fire('itemselect', eventDetail);
+            this.close();
+          }
+        };
+
+        const handleMouseEnter = (e: Event) => {
+          if (!isDisabled && !isSplit) {
+            const domLi = e.target as HTMLLIElement;
+            if (isGrouper) {
+              const domUl = Array.from(domLi.children).find((n) => n instanceof HTMLUListElement)!;
+              const liRect = domLi.getBoundingClientRect();
+              domUl.classList.toggle(
+                'nestle',
+                liRect.right + domUl.clientWidth + 2 > window.innerWidth,
+              );
+            }
+
+            domLi.classList.add('hover');
+            q(this).fire('itemhover', eventDetail);
+          }
+        };
+
+        const handleMouseLeave = (e: Event) => {
+          if (!isDisabled && !isSplit) {
+            (e.target as Element).classList.remove('hover');
+            q(this).fire('itemunhover', eventDetail);
+          }
+        };
+
+        const $domItem = q({ tag: 'li' })
+          .attr('class', classes.length ? classes.join(' ') : null!)
+          .attr('aria-keyshortcuts', shortcut!)
+          .on('click contextmenu', handleClick)
+          .on('mouseenter', handleMouseEnter)
+          .on('mouseleave', handleMouseLeave);
+
+        const charLeft = li.dataset.charLeft || '';
+        const charRight = li.dataset.charRight || '';
+        const imgLeft = imgs.find((i) => !i.classList.contains('right'));
+        const imgRight = imgs.find((i) => i.classList.contains('right'));
+
+        if (!isSplit && !isGrouper && bestText) {
+          if (NewDemo.CHAR_REF_REGEX.test(charLeft))
+            $domItem.append(`<span class='icon left'>&#x${charLeft};</span>`);
+          else if (charLeft)
+            console.warn(`ne14-menu: Bad hex code '${charLeft}' to left of '${bestText}'.`);
+          else if (imgLeft) $domItem.append(`<img class='icon left' src='${imgLeft.src}'/>`);
+
+          if (NewDemo.CHAR_REF_REGEX.test(charRight))
+            $domItem.append(`<span class='icon right'>&#x${charRight};</span>`);
+          else if (charRight)
+            console.warn(`ne14-menu: Bad hex code '${charRight}' to right of '${bestText}'.`);
+          else if (imgRight) $domItem.append(`<img class='icon right' src='${imgRight.src}'/>`);
+        }
+
+        if (bestText) $domItem.append({ tag: 'p', text: bestText });
+        if (shortcut) $domItem.append({ tag: 'p', text: shortcut });
+        if (isGrouper)
+          $domItem.appendIn({ tag: 'ul' }).append(...this.walk(ul, isDisabled, `${liRef}-`));
+
+        // Do not push two consecutive splits
+        if (!isSplit || !acc[acc.length - 1]?.classList?.contains('split')) {
+          acc.push($domItem.elements[0] as HTMLLIElement);
+        }
+        return acc;
+      }, [] as HTMLLIElement[]);
   }
 }
 

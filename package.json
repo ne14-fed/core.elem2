@@ -28,5 +28,8 @@
     "esbuild-sass-plugin": "^3.3.1",
     "html-minifier-terser": "^7.2.0",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@ne1410s/dom": "^0.3.120"
   }
 }

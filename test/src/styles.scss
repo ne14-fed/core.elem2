@@ -1,3 +1,28 @@
-new-demo {
-  --bg: goldenrod;
+html {
+  font: 20px Calibri;
+}
+.box {
+  margin: 2em;
+  padding: 1em;
+  text-align: center;
+}
+.red {
+  background-color: red;
+}
+.yellow {
+  background-color: yellow;
+}
+.green {
+  background-color: green;
+}
+.blue {
+  background-color: blue;
+}
+new-demo.dark {
+  --bg: #333;
+  --border: 1px solid #888;
+  --box-shadow: 2px 2px 3px #333;
+  --hover-item-bg: #666;
+  --fg: #eee;
+  --disabled-fg: #666;
 }
