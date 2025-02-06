@@ -14,12 +14,11 @@
     "dist"
   ],
   "scripts": {
-    "dev": "npm-run-all link build:watch --parallel start-test-harness",
+    "dev": "npm link && concurrently \"npm run build:watch\" \"npm run start-test-harness\"",
     "clean": "del-cli dist",
     "build": "npm run clean && tsc && node esbuild.mjs",
     "build:watch": "concurrently \"tsc --watch\" \"node esbuild.mjs --watch\"",
-    "start-test-harness": "(cd test && npm link @ne1410s/new-demo && npx vite)",
-    "link": "npm link"
+    "start-test-harness": "cd test && npm i && npm link @ne1410s/new-demo && npx vite"
   },
   "devDependencies": {
     "clean-css": "^5.3.3",
@@ -28,7 +27,6 @@
     "esbuild": "^0.24.2",
     "esbuild-sass-plugin": "^3.3.1",
     "html-minifier-terser": "^7.2.0",
-    "npm-run-all": "^4.1.5",
     "typescript": "^5.0.0"
   }
 }
